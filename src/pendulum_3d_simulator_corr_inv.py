@@ -401,7 +401,7 @@ class PendulumSimulator:
         qd_state_end[0, link2_rx_index] = 0.0
         qd_state_end[0, link2_ry_index] = 0.0
         self.xBar_end = self.dsys.build_state(qd_state_end)
-        
+
         (Xd_up, Ud_up) = self.dsys.build_trajectory(qd_up)  # Set desired state and input trajectory
         (Xd_dip, Ud_dip) = self.dsys.build_trajectory(qd_dip)
         (Xd_comb, Ud_comb) = self.dsys.build_trajectory(self.qd_comb)
@@ -600,6 +600,10 @@ class PendulumSimulator:
             # calculate feedback law
             if self.k > 200 and self.k < 400:
                 xTilde = X - self.xBar_dip
+                xTilde[0] = shortest_angular_distance(X[0], xTilde[0])
+                xTilde[1] = shortest_angular_distance(X[1], xTilde[1])
+                xTilde[2] = shortest_angular_distance(X[2], xTilde[2])
+                xTilde[3] = shortest_angular_distance(X[3], xTilde[3])
                 u_cont = -np.dot(self.Kstab_dip[0], xTilde)
 
                 #u_cont = u_cont + (0.75 * 9.81 * 2.0 * sin(QBAR_DIP))
@@ -608,6 +612,10 @@ class PendulumSimulator:
                     # rospy.loginfo(xTilde)
             else:
                 xTilde = X - self.xBar_end
+                xTilde[0] = shortest_angular_distance(X[0], xTilde[0])
+                xTilde[1] = shortest_angular_distance(X[1], xTilde[1])
+                xTilde[2] = shortest_angular_distance(X[2], xTilde[2])
+                xTilde[3] = shortest_angular_distance(X[3], xTilde[3])
                 u_cont = -np.dot(self.Kstab_up[0], xTilde)
                 if self.k == 400:
                     rospy.loginfo("POP!")

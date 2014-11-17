@@ -606,7 +606,7 @@ class PendulumSimulator:
                     rospy.loginfo("POP!")
                     # rospy.loginfo(xTilde)
 
-            "Error:"
+            print "Error:"
             print xTilde
 
             if u_cont[0] > SATURATION_TORQUE:

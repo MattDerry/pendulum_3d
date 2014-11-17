@@ -602,10 +602,10 @@ class PendulumSimulator:
                 xTilde = X - self.xBar_dip
                 print "Temp Error(3):"
                 print xTilde
-                xTilde[0] = shortest_angular_distance(X[0], xTilde[0])
-                xTilde[1] = shortest_angular_distance(X[1], xTilde[1])
-                xTilde[2] = shortest_angular_distance(X[2], xTilde[2])
-                xTilde[3] = shortest_angular_distance(X[3], xTilde[3])
+                xTilde[0] = normalize_angle(xTilde[0])
+                xTilde[1] = normalize_angle(xTilde[1])
+                xTilde[2] = normalize_angle(xTilde[2])
+                xTilde[3] = normalize_angle(xTilde[3])
                 print "Temp Error(4):"
                 print xTilde
                 u_cont = -np.dot(self.Kstab_dip[0], xTilde)
@@ -618,10 +618,10 @@ class PendulumSimulator:
                 xTilde = X - self.xBar_end
                 print "Temp Error(1):"
                 print xTilde
-                xTilde[0] = shortest_angular_distance(X[0], xTilde[0])
-                xTilde[1] = shortest_angular_distance(X[1], xTilde[1])
-                xTilde[2] = shortest_angular_distance(X[2], xTilde[2])
-                xTilde[3] = shortest_angular_distance(X[3], xTilde[3])
+                xTilde[0] = normalize_angle(xTilde[0])
+                xTilde[1] = normalize_angle(xTilde[1])
+                xTilde[2] = normalize_angle(xTilde[2])
+                xTilde[3] = normalize_angle(xTilde[3])
                 print "Temp Error(2):"
                 print xTilde
                 u_cont = -np.dot(self.Kstab_up[0], xTilde)

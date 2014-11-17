@@ -434,8 +434,8 @@ class PendulumSimulator:
         self.state_trajectory[0] = self.xBar_end
 
         # set initial system state
-        q0 = (QBAR_END - 0.1, 0.1, 0.0, 0.0)
-        q1 = (QBAR_END - 0.1, 0.1, 0.0, 0.0)
+        q0 = (QBAR_END, 0.0, 0.0, 0.0)
+        q1 = (QBAR_END, 0.0, 0.0, 0.0)
         self.mvi.initialize_from_configs(0.0, q0, DT, q1)
 
         self.disp_q = self.mvi.q2

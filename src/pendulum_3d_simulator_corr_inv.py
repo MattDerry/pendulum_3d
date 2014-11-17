@@ -581,6 +581,7 @@ class PendulumSimulator:
                 qtmp[self.sys.get_config(q).index] = normalize_angle(q0)
             X = np.hstack((qtmp, ptmp))
 
+            print "State:"
             print qtmp
 
             if not self.in_basin_of_attraction(X):
@@ -604,6 +605,9 @@ class PendulumSimulator:
                 if self.k == 400:
                     rospy.loginfo("POP!")
                     # rospy.loginfo(xTilde)
+
+            "Error:"
+            print xTilde
 
             if u_cont[0] > SATURATION_TORQUE:
                 u_cont[0] = SATURATION_TORQUE

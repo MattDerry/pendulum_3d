@@ -393,8 +393,15 @@ class PendulumSimulator:
         qd_state_dip[0, link1_ry_index] = normalize_angle(QBAR_DIP)
         qd_state_dip[0, link2_rx_index] = -1*QBAR_DIP
         qd_state_dip[0, link2_ry_index] = -1*QBAR_DIP
-        self.xBar_end = self.dsys.build_state()
         self.xBar_dip = self.dsys.build_state(qd_state_dip)
+
+        qd_state_end = np.zeros((1, self.mvi.system.nQ))
+        qd_state_end[0, link1_rx_index] = normalize_angle(QBAR_END)
+        qd_state_end[0, link1_ry_index] = 0.0
+        qd_state_end[0, link2_rx_index] = 0.0
+        qd_state_end[0, link2_ry_index] = 0.0
+        self.xBar_end = self.dsys.build_state(qd_state_end)
+        
         (Xd_up, Ud_up) = self.dsys.build_trajectory(qd_up)  # Set desired state and input trajectory
         (Xd_dip, Ud_dip) = self.dsys.build_trajectory(qd_dip)
         (Xd_comb, Ud_comb) = self.dsys.build_trajectory(self.qd_comb)

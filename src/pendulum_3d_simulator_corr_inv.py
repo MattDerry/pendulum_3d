@@ -582,7 +582,7 @@ class PendulumSimulator:
             X = np.hstack((qtmp, ptmp))
 
             print "State:"
-            print qtmp
+            print X
 
             if not self.in_basin_of_attraction(X):
                 self.simulation_failed = True

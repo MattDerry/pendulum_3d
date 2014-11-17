@@ -380,19 +380,19 @@ class PendulumSimulator:
         for i, t in enumerate(tvec):
             if i > 200 and i < 400:
                 qd_dip[i, link1_rx_index] = normalize_angle(QBAR_END + QBAR_DIP)  # Set desired configuration trajectory
-                qd_dip[i, link1_ry_index] = normalize_angle(QBAR_DIP)
+                qd_dip[i, link1_ry_index] = -1*normalize_angle(QBAR_DIP)
                 qd_dip[i, link2_rx_index] = -1*QBAR_DIP
-                qd_dip[i, link2_ry_index] = -1*QBAR_DIP
+                qd_dip[i, link2_ry_index] = QBAR_DIP
                 self.qd_comb[i, link1_rx_index] = normalize_angle(QBAR_END + QBAR_DIP)  # Set desired configuration trajectory
-                self.qd_comb[i, link1_ry_index] = normalize_angle(QBAR_DIP)
+                self.qd_comb[i, link1_ry_index] = -1*normalize_angle(QBAR_DIP)
                 self.qd_comb[i, link2_rx_index] = -1*QBAR_DIP
-                self.qd_comb[i, link2_ry_index] = -1*QBAR_DIP
+                self.qd_comb[i, link2_ry_index] = QBAR_DIP
 
         qd_state_dip = np.zeros((1, self.mvi.system.nQ))
         qd_state_dip[0, link1_rx_index] = normalize_angle(QBAR_END + QBAR_DIP)
-        qd_state_dip[0, link1_ry_index] = normalize_angle(QBAR_DIP)
+        qd_state_dip[0, link1_ry_index] = -1*normalize_angle(QBAR_DIP)
         qd_state_dip[0, link2_rx_index] = -1*QBAR_DIP
-        qd_state_dip[0, link2_ry_index] = -1*QBAR_DIP
+        qd_state_dip[0, link2_ry_index] = QBAR_DIP
         self.xBar_dip = self.dsys.build_state(qd_state_dip)
 
         qd_state_end = np.zeros((1, self.mvi.system.nQ))
@@ -600,14 +600,10 @@ class PendulumSimulator:
             # calculate feedback law
             if self.k > 200 and self.k < 400:
                 xTilde = X - self.xBar_dip
-                print "Temp Error(3):"
-                print xTilde
                 xTilde[0] = normalize_angle(xTilde[0])
                 xTilde[1] = normalize_angle(xTilde[1])
                 xTilde[2] = normalize_angle(xTilde[2])
                 xTilde[3] = normalize_angle(xTilde[3])
-                print "Temp Error(4):"
-                print xTilde
                 u_cont = -np.dot(self.Kstab_dip[0], xTilde)
 
                 #u_cont = u_cont + (0.75 * 9.81 * 2.0 * sin(QBAR_DIP))
@@ -616,14 +612,10 @@ class PendulumSimulator:
                     # rospy.loginfo(xTilde)
             else:
                 xTilde = X - self.xBar_end
-                print "Temp Error(1):"
-                print xTilde
                 xTilde[0] = normalize_angle(xTilde[0])
                 xTilde[1] = normalize_angle(xTilde[1])
                 xTilde[2] = normalize_angle(xTilde[2])
                 xTilde[3] = normalize_angle(xTilde[3])
-                print "Temp Error(2):"
-                print xTilde
                 u_cont = -np.dot(self.Kstab_up[0], xTilde)
                 if self.k == 400:
                     rospy.loginfo("POP!")

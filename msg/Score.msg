@@ -1,0 +1,13 @@
+float64 cost
+float64 cmd_x_corr
+float64 cmd_y_corr
+float64 cmd_x_corr_offset
+float64 cmd_y_corr_offset
+float64 cmd_corr
+float64 cmd_offset
+float64 state_x1_corr
+float64 state_y1_corr
+float64 state_x2_corr
+float64 state_y2_corr
+float64 state_corr
+float64 state_offset

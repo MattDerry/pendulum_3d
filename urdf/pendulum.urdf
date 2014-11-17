@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<robot name="pendulum">
+  <!-- ~~~~~~~~~~~~~~ -->
+  <!-- VISUALIZATIONS -->
+  <!-- ~~~~~~~~~~~~~~ -->
+  <!-- body display definition -->
+  <link name="base" />
+  <link name="board">
+    <visual>
+      <geometry>
+        <box size="0.5 .5 .02"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.8 0.8 0.80 1 "/>
+      </material>
+    </visual>
+  </link>
+  <link name="link1">
+    <visual>
+      <geometry>
+        <cylinder length="1.0" radius="0.03"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.80 1 "/>
+      </material>
+    </visual>
+  </link>
+  <!-- left humerus display definition-->
+  <link name="link2">
+    <visual>
+      <geometry>
+        <cylinder length="1.0" radius="0.03"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.0 0.00 1 "/>
+      </material>
+    </visual>
+  </link>
+  
+  <!-- ~~~~~~~~~~~~~~~~~ -->
+  <!-- JOINT DEFINITIONS -->
+  <!-- ~~~~~~~~~~~~~~~~~ -->
+  <!-- link 1 -->
+  <link name="link1_rx_link" />
+  <joint name="link1_rx" type="continuous" >
+    <origin xyz="0.0 0.0 0.0" />
+    <parent link="base" />
+    <child link="link1_rx_link" />
+    <axis xyz="1 0 0" />
+  </joint>
+  <link name="link1_ry_link" />
+  <joint name="link1_ry" type="continuous" >
+    <origin xyz="0 0 0" />
+    <parent link="link1_rx_link"/>
+    <child link="link1_ry_link"/>
+    <axis xyz="0 1 0" />
+  </joint>
+  <joint name="board_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="link1_ry_link"/>
+    <child link="board"/>
+  </joint>
+  <joint name="link1_connection" type="fixed">
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <parent link="board"/>
+    <child link="link1" />
+  </joint>
+  <!-- link 2 -->
+  <link name="link2_rx_link" />
+  <joint name="link2_rx" type="continuous" >
+    <origin xyz="0.0 0.0 0.5" />
+    <parent link="link1" />
+    <child link="link2_rx_link" />
+    <axis xyz="1 0 0" />
+  </joint>
+  <link name="link2_ry_link" />
+  <joint name="link2_ry" type="continuous" >
+    <origin xyz="0 0 0" />
+    <parent link="link2_rx_link"/>
+    <child link="link2_ry_link"/>
+    <axis xyz="0 1 0" />
+  </joint>
+  <joint name="link2_connection" type="fixed">
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <parent link="link2_ry_link"/>
+    <child link="link2" />
+  </joint>
+</robot>

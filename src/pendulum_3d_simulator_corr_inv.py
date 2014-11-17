@@ -434,8 +434,8 @@ class PendulumSimulator:
         self.state_trajectory[0] = self.xBar_end
 
         # set initial system state
-        q0 = (QBAR_END, 0.1, 0.0, 0.0)
-        q1 = (QBAR_END, 0.1, 0.0, 0.0)
+        q0 = (QBAR_END - 0.1, 0.1, 0.0, 0.0)
+        q1 = (QBAR_END - 0.1, 0.1, 0.0, 0.0)
         self.mvi.initialize_from_configs(0.0, q0, DT, q1)
 
         self.disp_q = self.mvi.q2
@@ -607,6 +607,9 @@ class PendulumSimulator:
             if u_cont[1] > SATURATION_TORQUE:
                 u_cont[1] = SATURATION_TORQUE
 
+            self.user_ux = 0.0
+            self.user_uy = 0.0
+
             # blend user and feedback control input
             u[0] = self.trust*self.user_ux + (1-self.trust)*u_cont[0]
             u[1] = self.trust*self.user_uy + (1-self.trust)*u_cont[1]
@@ -621,8 +624,6 @@ class PendulumSimulator:
         try:
             self.k += 1
             t2 = self.k*TIMESTEP/1000.0
-            u[0] = 0.0
-            u[1] = 0.0
             self.mvi.step(t2, u1=u)
         except trep.ConvergenceError:
             self.simulation_failed = True

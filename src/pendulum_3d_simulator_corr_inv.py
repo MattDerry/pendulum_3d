@@ -580,6 +580,9 @@ class PendulumSimulator:
                 q0 = qtmp[self.sys.get_config(q).index]
                 qtmp[self.sys.get_config(q).index] = normalize_angle(q0)
             X = np.hstack((qtmp, ptmp))
+
+            print qtmp
+
             if not self.in_basin_of_attraction(X):
                 self.simulation_failed = True
                 rospy.loginfo("Outside basin of attraction")

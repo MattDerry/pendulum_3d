@@ -36,7 +36,7 @@ import time
 # Experiment Settings
 #####################
 USER_NUMBER = 1
-MAX_TRIALS = 5
+MAX_TRIALS = 10
 STARTING_TRUST = 0.3
 MAX_TORQUE = 100.0
 
@@ -45,8 +45,8 @@ ALPHA = 0.05
 
 EXPONENT = -0.0001
 
-MAX_COST = 10000
-MIN_COST = 500
+MAX_COST = 200000
+MIN_COST = 50000
 
 ####################
 # GLOBAL VARIABLES #
@@ -260,8 +260,8 @@ class PendulumSimulator:
         self.tf_timer = rospy.Timer(rospy.Duration(1.0/tf_freq), self.send_joint_states)
 
         # define a timer for integrating the state of the VI
-        rospy.Subscriber("/board_joy", Joy, self.joy_cb)
-        #rospy.Subscriber("/joy", Joy, self.joy_cb)
+        # rospy.Subscriber("/board_joy", Joy, self.joy_cb)
+        rospy.Subscriber("/joy", Joy, self.joy_cb)
         self.timer_pub = rospy.Publisher("/task_timer", Marker, queue_size=1)
         self.task_pub = rospy.Publisher("/task_direction", Marker, queue_size=2)
         self.target_pub = rospy.Publisher("/task_target", Marker, queue_size=2)
@@ -288,7 +288,7 @@ class PendulumSimulator:
         self.task_marker.pose.position.y = 0.0
         self.task_marker.pose.position.z = 0.0
         # rospy.loginfo("task heading: %f", atan2(QBAR_DIP1, QBAR_DIP2))
-        self.task_marker.pose.orientation = GM.Quaternion(*(tf.transformations.quaternion_from_euler(-1*atan2(QBAR_DIP1, QBAR_DIP2), 0, 0, 'rzyx')))
+        self.task_marker.pose.orientation = GM.Quaternion(*(tf.transformations.quaternion_from_euler(atan2(QBAR_DIP2, -1*QBAR_DIP1), 0, 0, 'rzyx')))
         self.task_marker.color.r = 1.0
         self.task_marker.color.g = 1.0
         self.task_marker.color.b = 0.0
@@ -326,7 +326,7 @@ class PendulumSimulator:
         self.target_marker.action = 0
         self.target_marker.pose.position.x = 0.0
         self.target_marker.pose.position.y = 0.0
-        self.target_marker.pose.position.z = 2.0
+        self.target_marker.pose.position.z = -2.0
         self.target_marker.text = "0"
         self.target_marker.color.r = 0.0
         self.target_marker.color.g = 0.0
@@ -341,7 +341,7 @@ class PendulumSimulator:
 
     def joy_cb(self, data):
         self.joy = data
-        self.user_ux = self.max_torque * data.axes[0]
+        self.user_ux = self.max_torque * -data.axes[0]
         self.user_uy = self.max_torque * -data.axes[1]
 
         self.reset_button_prev = self.reset_button
@@ -355,7 +355,7 @@ class PendulumSimulator:
         self.simulation_failed = False
 
         # calculate linearization, and feedback controller:
-        tvec = np.arange(0, 500.0*TIMESTEP/1000.0, TIMESTEP/1000.0)
+        tvec = np.arange(0, 600.0*TIMESTEP/1000.0, TIMESTEP/1000.0)
         self.dsys = trep.discopt.DSystem(self.mvi, tvec)
         link1_rx_index = self.dsys.system.get_config('link-1-base_x').index
         link1_ry_index = self.dsys.system.get_config('link-1-base_y').index
@@ -405,8 +405,7 @@ class PendulumSimulator:
         (Xd_up, Ud_up) = self.dsys.build_trajectory(qd_up)  # Set desired state and input trajectory
         (Xd_dip, Ud_dip) = self.dsys.build_trajectory(qd_dip)
         (Xd_comb, Ud_comb) = self.dsys.build_trajectory(self.qd_comb)
-        print self.qd_comb[0,:]
-        print self.qd_comb[300,:]
+
         self.Xd = Xd_comb
         self.Ud = Ud_comb
 
@@ -422,14 +421,14 @@ class PendulumSimulator:
 
         # rospy.loginfo("Xd: %d", len(Xd_up))
         dyn_weight = 50
-        kin_weight = 1
-        mom_weight = 0.01
+        kin_weight = 25
+        mom_weight = 1
         vel_weight = kin_weight*TIMESTEP/1000.0
         self.Q = np.diag(np.hstack(([dyn_weight]*self.sys.nQd,
                                     [kin_weight]*self.sys.nQk,
                                     [mom_weight]*self.sys.nQd,
                                     [vel_weight]*self.sys.nQk)))
-        self.R = mom_weight*np.identity(2)
+        self.R = 0.000001*np.identity(2)
         # rospy.loginfo("Q shape: %s, R shape %s", self.Q.shape, self.R.shape)
         self.Qk = lambda k: self.Q
         self.Rk = lambda k: self.R
@@ -494,24 +493,24 @@ class PendulumSimulator:
 
 
     def update_interactive(self, event):
-        if self.simulation_failed or self.k == 500:
+        if self.simulation_failed or self.k == 600:
             self.timer.shutdown()
             self.tf_timer.shutdown()
 
             self.tcost = 0
 
-            if self.k == 500:
+            if self.k == 600:
                 self.timer_marker.header.stamp = rospy.Time.now()
                 self.timer_marker.text = "STOP"
                 self.timer_pub.publish(self.timer_marker)
 
             # Pad the trajectories so the costs are high, but not so high in the case of stabilization failure
-            if self.k < 499:
+            if self.k < 599:
                 last_state = self.state_trajectory[self.k-1]
                 last_combined_command = self.combined_input_trajectory[self.k-1]
                 last_user_command = self.user_input_trajectory[self.k-1]
                 last_controller_command = self.controller_input_trajectory[self.k-1]
-                for i in range(self.k, 500):
+                for i in range(self.k, 600):
                     self.state_trajectory[i] = last_state
                     self.combined_input_trajectory[i-1] = last_combined_command
                     self.user_input_trajectory[i-1] = last_user_command
@@ -558,18 +557,18 @@ class PendulumSimulator:
             self.target_marker.header.stamp = rospy.Time.now()
             if self.k == 200:
                 self.timer_marker.text = "DIP"
-                self.target_marker.pose.position.x = sin(QBAR_DIP1) - 0.1
-                self.target_marker.pose.position.y = -1*sin(QBAR_DIP2) + 0.1
-                self.target_marker.pose.position.z = 1.95
+                self.target_marker.pose.position.x = -1*sin(QBAR_DIP1) + 0.05
+                self.target_marker.pose.position.y = sin(QBAR_DIP2) - 0.05
+                self.target_marker.pose.position.z = -1.95
             elif self.k == 400:
                 self.timer_marker.text = "RETURN"
                 self.target_marker.pose.position.x = 0.0
                 self.target_marker.pose.position.y = 0.0
-                self.target_marker.pose.position.z = 2.0
-            elif self.k == 500:
+                self.target_marker.pose.position.z = -2.0
+            elif self.k == 600:
                 self.timer_marker.text = "STOP"
             elif self.k > 400:
-                self.timer_marker.text = str(10-(self.k/50))
+                self.timer_marker.text = str(12-(self.k/50))
             elif self.k > 200:
                 self.timer_marker.text = str(8-(self.k/50))
             elif self.k < 200:
@@ -588,8 +587,8 @@ class PendulumSimulator:
                 qtmp[self.sys.get_config(q).index] = normalize_angle(q0)
             X = np.hstack((qtmp, ptmp))
 
-            print "State:"
-            print X
+            #print "State:"
+            #print X
 
             if not self.in_basin_of_attraction(X):
                 self.simulation_failed = True
@@ -621,16 +620,16 @@ class PendulumSimulator:
                     rospy.loginfo("POP!")
                     # rospy.loginfo(xTilde)
 
-            print "Error:"
-            print xTilde
+            #print "Error:"
+            #print xTilde
 
             if u_cont[0] > SATURATION_TORQUE:
                 u_cont[0] = SATURATION_TORQUE
             if u_cont[1] > SATURATION_TORQUE:
                 u_cont[1] = SATURATION_TORQUE
 
-            self.user_ux = 0.0
-            self.user_uy = 0.0
+            #self.user_ux = 0.0
+            #self.user_uy = 0.0
 
             # blend user and feedback control input
             u[0] = self.trust*self.user_ux + (1-self.trust)*u_cont[0]

@@ -21,7 +21,7 @@
   <!-- launch rviz -->
   <group if="$(arg vis)">
     <node pkg="rviz" type="rviz" respawn="false" name="rviz"
-      args="-d $(find pendulum_3d)/launch/pendulum_3d.rviz" />
+      args="-d $(find pendulum_3d)/launch/pendulum_3d_inv.rviz" />
   </group>
 
 </launch>

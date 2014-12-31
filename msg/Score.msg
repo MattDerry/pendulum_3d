@@ -1,13 +1,21 @@
 float64 cost
 float64 cmd_x_corr
 float64 cmd_y_corr
-float64 cmd_x_corr_offset
-float64 cmd_y_corr_offset
+int64 cmd_x_corr_offset
+int64 cmd_y_corr_offset
 float64 cmd_corr
-float64 cmd_offset
+int64 cmd_offset
 float64 state_x1_corr
+int64 state_x1_offset
 float64 state_y1_corr
+int64 state_y1_offset
 float64 state_x2_corr
+int64 state_x2_offset
 float64 state_y2_corr
+int64 state_y2_offset
 float64 state_corr
-float64 state_offset
+int64 state_offset
+int64 time_to_fail
+int64 input_type # 1 is ps3 joy, 2 is balance board
+int64 user_number
+int64 trial_number

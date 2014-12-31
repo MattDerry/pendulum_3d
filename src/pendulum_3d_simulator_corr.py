@@ -35,12 +35,13 @@ import time
 #####################
 # Experiment Settings
 #####################
-USER_NUMBER = 6
-MAX_TRIALS = 15
-STARTING_TRUST = 0.3
+USER_NUMBER = 5
+MAX_TRIALS = 25
+STARTING_TRUST = 0.35
 MAX_TORQUE = 100.0
 
-INPUT_DEVICE = "balance_board"  # "joystick"
+INPUT_DEVICE = "joystick" # "balance_board"
+INPUT_TYPE = 1     # 1 is ps3joy, 2 is balance board
 ALPHA = 0.05
 
 EXPONENT = -0.0001
@@ -142,7 +143,8 @@ class User:
 
     def update_trust(self, new_trust, new_cost):
         self.current_trial_num = self.current_trial_num + 1
-        adjusted_trust = (1-self.alpha) * self.current_trust + self.alpha * new_trust
+        adjusted_trust = self.current_trust
+        # adjusted_trust = (1-self.alpha) * self.current_trust + self.alpha * new_trust
         self.write_to_log(self.current_trial_num, self.current_trust, new_trust, adjusted_trust, new_cost)
         self.current_trust = adjusted_trust
         if self.current_trial_num == self.max_num_trials:
@@ -260,8 +262,8 @@ class PendulumSimulator:
         self.tf_timer = rospy.Timer(rospy.Duration(1.0/tf_freq), self.send_joint_states)
 
         # define a timer for integrating the state of the VI
-        rospy.Subscriber("/board_joy", Joy, self.joy_cb)
-        #rospy.Subscriber("/joy", Joy, self.joy_cb)
+        # rospy.Subscriber("/board_joy", Joy, self.joy_cb)
+        rospy.Subscriber("/joy", Joy, self.joy_cb)
         self.timer_pub = rospy.Publisher("/task_timer", Marker, queue_size=1)
         self.task_pub = rospy.Publisher("/task_direction", Marker, queue_size=2)
         self.target_pub = rospy.Publisher("/task_target", Marker, queue_size=2)
@@ -338,6 +340,8 @@ class PendulumSimulator:
 
     def create_score_msg(self):
         self.score = Score()
+        self.score.input_type = INPUT_TYPE
+        self.score.user_number = USER_NUMBER
 
     def joy_cb(self, data):
         self.joy = data
@@ -433,14 +437,20 @@ class PendulumSimulator:
         self.disp_q = self.mvi.q2
         self.disp_qd = np.hstack((self.mvi.q2[0:self.sys.nQd], [0]*self.sys.nQk))
 
+    def normalized_correlation(self, a, v):
+        a = (a - np.mean(a)) / (np.std(a) * len(a))
+        v = (v - np.mean(v)) / (np.std(v))
+
+        return np.correlate(a, v, 'full')
+
     def calc_correlations(self):
         self.state_trajectory
         self.combined_input_trajectory
         self.user_input_trajectory
         self.controller_input_trajectory
 
-        self.cmd_x_corr = np.correlate(self.user_input_trajectory[:,0], self.controller_input_trajectory[:,0], 'full')
-        self.cmd_y_corr = np.correlate(self.user_input_trajectory[:,1], self.controller_input_trajectory[:,1], 'full')
+        self.cmd_x_corr = self.normalized_correlation(self.user_input_trajectory[:,0], self.controller_input_trajectory[:,0])
+        self.cmd_y_corr = self.normalized_correlation(self.user_input_trajectory[:,1], self.controller_input_trajectory[:,1])
         max_x_idx = np.argmax(self.cmd_x_corr)
         max_y_idx = np.argmax(self.cmd_y_corr)
 
@@ -461,10 +471,18 @@ class PendulumSimulator:
         rospy.loginfo("y cmd correlation: %f, index offset: %d", self.cmd_y_corr[max_y_idx], max_y_idx - (len(self.user_input_trajectory[:,0])))
         rospy.loginfo("cmd correlation: %f, index offset: %d", max_corr, max_idx - (len(self.user_input_trajectory[:,0])))
 
-        self.state_x1_corr = np.correlate(self.state_trajectory[:,0], self.Xd[:,0], 'full')
-        self.state_y1_corr = np.correlate(self.state_trajectory[:,1], self.Xd[:,1], 'full')
-        self.state_x2_corr = np.correlate(self.state_trajectory[:,2], self.Xd[:,2], 'full')
-        self.state_y2_corr = np.correlate(self.state_trajectory[:,3], self.Xd[:,3], 'full')
+        self.state_x1_corr = self.normalized_correlation(self.state_trajectory[:,0], self.Xd[:,0])
+        self.score.state_x1_offset = np.argmax(self.state_x1_corr) - (len(self.state_trajectory[:,0]))
+        self.score.state_x1_corr = self.state_x1_corr[np.argmax(self.state_x1_corr)]
+        self.state_y1_corr = self.normalized_correlation(self.state_trajectory[:,1], self.Xd[:,1])
+        self.score.state_y1_offset = np.argmax(self.state_y1_corr) - (len(self.state_trajectory[:,0]))
+        self.score.state_y1_corr = self.state_y1_corr[np.argmax(self.state_y1_corr)]
+        self.state_x2_corr = self.normalized_correlation(self.state_trajectory[:,2], self.Xd[:,2])
+        self.score.state_x2_offset = np.argmax(self.state_x2_corr) - (len(self.state_trajectory[:,0]))
+        self.score.state_x2_corr = self.state_x2_corr[np.argmax(self.state_x2_corr)]
+        self.state_y2_corr = self.normalized_correlation(self.state_trajectory[:,3], self.Xd[:,3])
+        self.score.state_y2_offset = np.argmax(self.state_y2_corr) - (len(self.state_trajectory[:,0]))
+        self.score.state_y2_corr = self.state_y2_corr[np.argmax(self.state_y2_corr)]
 
         max_idx = 0
         max_corr = 0
@@ -528,6 +546,8 @@ class PendulumSimulator:
                 self.task_trust = 0.0
 
             self.calc_correlations()
+            self.score.trial_number = self.trial_num
+            self.score.time_to_fail = self.k
             self.score_pub.publish(self.score)
 
             self.finished = True
@@ -599,13 +619,22 @@ class PendulumSimulator:
             if u_cont[1] > SATURATION_TORQUE:
                 u_cont[1] = SATURATION_TORQUE
 
+
+            # Blend Controller as user + white noise
+            # contx = u_cont[0] + np.random.standard_normal()*0.1*u_cont[0]
+            # conty = u_cont[1] + np.random.standard_normal()*0.1*u_cont[1]
+            # u[0] = self.trust*contx + (1-self.trust)*u_cont[0]
+            # u[1] = self.trust*conty + (1-self.trust)*u_cont[1]
+            # self.user_input_trajectory[self.k-1, 0] = contx
+            # self.user_input_trajectory[self.k-1, 1] = conty
+
             # blend user and feedback control input
             u[0] = self.trust*self.user_ux + (1-self.trust)*u_cont[0]
             u[1] = self.trust*self.user_uy + (1-self.trust)*u_cont[1]
-
-            self.controller_input_trajectory[self.k-1] = u_cont
             self.user_input_trajectory[self.k-1, 0] = self.user_ux
             self.user_input_trajectory[self.k-1, 1] = self.user_uy
+
+            self.controller_input_trajectory[self.k-1] = u_cont
             self.combined_input_trajectory[self.k-1] = u
 
             # rospy.loginfo("[before] u: (%f, %f), user: (%f, %f), controller: (%f, %f)", u[0], u[1], self.user_ux, self.user_uy, u_cont[0], u_cont[1])
